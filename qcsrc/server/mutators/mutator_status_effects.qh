@@ -1,0 +1,13 @@
+const float STAT_STATUS_ENABLED = 250;
+const float STAT_STATUS = 251;
+
+const float STATUS_EFFECT_FIRE = 1;
+const float STATUS_EFFECT_POISON = 2;
+const float STATUS_EFFECT_CONFUSION = 4;
+const float STATUS_EFFECT_BLEEDING = 8;
+
+//const float EF_POISON = 32768;
+
+.float status_effects;
+.float status_enabled;
+.float status_effects_delay;

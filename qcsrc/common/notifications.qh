@@ -374,6 +374,7 @@ void Send_Notification_WOCOVA(
 	MSG_INFO_NOTIF(1, INFO_DEATH_MURDER_VOID,              3, 2, "spree_inf s1 s2 s3loc spree_end", "s2 s1",  "notify_void",          _("^BG%s%s^K1 was thrown into a world of hurt by ^BG%s^K1%s%s"), "") \
 	MSG_INFO_NOTIF(1, INFO_DEATH_SELF_AUTOTEAMCHANGE,      2, 1, "s1 s2loc death_team", "",         "",                     _("^BG%s^K1 was moved into the %s%s"), "") \
 	MSG_INFO_NOTIF(1, INFO_DEATH_SELF_BETRAYAL,            2, 1, "s1 s2loc spree_lost", "s1",       "notify_teamkill_red",  _("^BG%s^K1 became enemies with the Lord of Teamplay%s%s"), "") \
+	MSG_INFO_NOTIF(1, INFO_DEATH_SELF_BLOODLOSS,           2, 1, "s1 s2loc spree_lost", "s1",       "notify_death",         _("^BG%s^K1 died of blood loss%s%s"), _("^BG%s^K1 donated a little too much blood%s%s")) \
 	MSG_INFO_NOTIF(1, INFO_DEATH_SELF_CAMP,                2, 1, "s1 s2loc spree_lost", "s1",       "notify_camping",       _("^BG%s^K1 thought they found a nice camping ground%s%s"), "") \
 	MSG_INFO_NOTIF(1, INFO_DEATH_SELF_CHEAT,               2, 1, "s1 s2loc spree_lost", "s1",       "notify_selfkill",      _("^BG%s^K1 unfairly eliminated themself%s%s"), "") \
 	MSG_INFO_NOTIF(1, INFO_DEATH_SELF_CUSTOM,              3, 1, "s1 s2 s3loc spree_lost", "s1",    "notify_void",          _("^BG%s^K1 %s^K1%s%s"), "") \
@@ -410,6 +411,7 @@ void Send_Notification_WOCOVA(
 	MSG_INFO_NOTIF(1, INFO_DEATH_SELF_NADE_ICE,            2, 1, "s1 s2loc spree_lost", "s1",       "notify_nade_ice",      _("^BG%s^K1 mastered the art of self-nading%s%s"), "") \
 	MSG_INFO_NOTIF(1, INFO_DEATH_SELF_NADE_ICE_FREEZE,     2, 1, "s1 s2loc spree_lost", "s1",       "notify_nade_ice",      _("^BG%s^K1 was frozen to death by their own Ice Nade%s%s"), _("^BG%s^K1 felt a little chilly%s%s")) \
 	MSG_INFO_NOTIF(1, INFO_DEATH_SELF_NOAMMO,              2, 1, "s1 s2loc spree_lost", "s1",       "notify_outofammo",     _("^BG%s^K1 died%s%s. What's the point of living without ammo?"), _("^BG%s^K1 ran out of ammo%s%s")) \
+	MSG_INFO_NOTIF(1, INFO_DEATH_SELF_POISON,              2, 1, "s1 s2loc spree_lost", "s1",       "notify_death",         _("^BG%s^K1 was poisoned%s%s"), "") \
 	MSG_INFO_NOTIF(1, INFO_DEATH_SELF_ROT,                 2, 1, "s1 s2loc spree_lost", "s1",       "notify_death",         _("^BG%s^K1 rotted away%s%s"), "") \
 	MSG_INFO_NOTIF(1, INFO_DEATH_SELF_SHOOTING_STAR,       2, 1, "s1 s2loc spree_lost", "s1",       "notify_shootingstar",  _("^BG%s^K1 became a shooting star%s%s"), "") \
 	MSG_INFO_NOTIF(1, INFO_DEATH_SELF_SLIME,               2, 1, "s1 s2loc spree_lost", "s1",       "notify_slime",         _("^BG%s^K1 was slimed%s%s"), "") \
@@ -599,6 +601,7 @@ void Send_Notification_WOCOVA(
 	MSG_CENTER_NOTIF(1, CENTER_NADE_BONUS,            		0, 0, "",             CPID_NADES,          "0 0", _("^F2You got a ^K1BONUS GRENADE^F2!"), "") \
 	MSG_CENTER_NOTIF(1, CENTER_DEATH_SELF_AUTOTEAMCHANGE,   0, 1, "death_team",   NO_CPID,             "0 0", _("^BGYou have been moved into a different team\nYou are now on: %s"), "") \
 	MSG_CENTER_NOTIF(1, CENTER_DEATH_SELF_BETRAYAL,         0, 0, "",             NO_CPID,             "0 0", _("^K1Don't shoot your team mates!"), _("^K1Don't go against your team mates!")) \
+	MSG_CENTER_NOTIF(1, CENTER_DEATH_SELF_BLOODLOSS,        0, 0, "",             NO_CPID,             "0 0", _("^K1You donated too much blood!"), "") \
 	MSG_CENTER_NOTIF(1, CENTER_DEATH_SELF_CAMP,             0, 0, "",             NO_CPID,             "0 0", _("^K1Die camper!"), _("^K1Reconsider your tactics, camper!")) \
 	MSG_CENTER_NOTIF(1, CENTER_DEATH_SELF_CHEAT,            0, 0, "",             NO_CPID,             "0 0", _("^K1You unfairly eliminated yourself!"), "") \
 	MSG_CENTER_NOTIF(1, CENTER_DEATH_SELF_CUSTOM,           2, 0, "s2",           NO_CPID,             "0 0", _("^K1You were %s"), "") \
@@ -612,6 +615,7 @@ void Send_Notification_WOCOVA(
 	MSG_CENTER_NOTIF(1, CENTER_DEATH_SELF_NADE_NAPALM,		0, 0, "",			  NO_CPID,			   "0 0", _("^K1Hanging around a napalm explosion is bad!"), "") \
 	MSG_CENTER_NOTIF(1, CENTER_DEATH_SELF_NADE_ICE_FREEZE,  0, 0, "",			  NO_CPID,			   "0 0", _("^K1You got a little bit too cold!"), _("^K1You felt a little chilly!")) \
 	MSG_CENTER_NOTIF(1, CENTER_DEATH_SELF_NOAMMO,           0, 0, "",             NO_CPID,             "0 0", _("^K1You were killed for running out of ammo..."), _("^K1You are respawning for running out of ammo...")) \
+	MSG_CENTER_NOTIF(1, CENTER_DEATH_SELF_POISON,           0, 0, "",             NO_CPID,             "0 0", _("^K1You were poisoned!"), _("^K1You forgot to take some medicine")) \
 	MSG_CENTER_NOTIF(1, CENTER_DEATH_SELF_ROT,              0, 0, "",             NO_CPID,             "0 0", _("^K1You grew too old without taking your medicine"), _("^K1You need to preserve your health")) \
 	MSG_CENTER_NOTIF(1, CENTER_DEATH_SELF_SHOOTING_STAR,    0, 0, "",             NO_CPID,             "0 0", _("^K1You became a shooting star!"), "") \
 	MSG_CENTER_NOTIF(1, CENTER_DEATH_SELF_SLIME,            0, 0, "",             NO_CPID,             "0 0", _("^K1You melted away in slime!"), "") \
@@ -760,6 +764,7 @@ void Send_Notification_WOCOVA(
 	MSG_MULTI_NOTIF(1, DEATH_MURDER_VH_WAKI_ROCKET,          NO_MSG,        INFO_DEATH_MURDER_VH_WAKI_ROCKET,          NO_MSG) \
 	MSG_MULTI_NOTIF(1, DEATH_MURDER_VOID,                    NO_MSG,        INFO_DEATH_MURDER_VOID,                    NO_MSG) \
 	MSG_MULTI_NOTIF(1, DEATH_SELF_AUTOTEAMCHANGE,            NO_MSG,        INFO_DEATH_SELF_AUTOTEAMCHANGE,            CENTER_DEATH_SELF_AUTOTEAMCHANGE) \
+	MSG_MULTI_NOTIF(1, DEATH_SELF_BLOODLOSS,                 NO_MSG,        INFO_DEATH_SELF_BLOODLOSS,                 CENTER_DEATH_SELF_BLOODLOSS) \
 	MSG_MULTI_NOTIF(1, DEATH_SELF_BETRAYAL,                  NO_MSG,        INFO_DEATH_SELF_BETRAYAL,                  CENTER_DEATH_SELF_BETRAYAL) \
 	MSG_MULTI_NOTIF(1, DEATH_SELF_CAMP,                      NO_MSG,        INFO_DEATH_SELF_CAMP,                      CENTER_DEATH_SELF_CAMP) \
 	MSG_MULTI_NOTIF(1, DEATH_SELF_CHEAT,                     NO_MSG,        INFO_DEATH_SELF_CHEAT,                     CENTER_DEATH_SELF_CHEAT) \
@@ -797,6 +802,7 @@ void Send_Notification_WOCOVA(
 	MSG_MULTI_NOTIF(1, DEATH_SELF_NADE_ICE,					 NO_MSG,		INFO_DEATH_SELF_NADE_ICE,				   CENTER_DEATH_SELF_NADE_ICE_FREEZE) \
 	MSG_MULTI_NOTIF(1, DEATH_SELF_NADE_ICE_FREEZE,           NO_MSG,		INFO_DEATH_SELF_NADE_ICE_FREEZE,           CENTER_DEATH_SELF_NADE_ICE_FREEZE) \
 	MSG_MULTI_NOTIF(1, DEATH_SELF_NOAMMO,                    NO_MSG,        INFO_DEATH_SELF_NOAMMO,                    CENTER_DEATH_SELF_NOAMMO) \
+	MSG_MULTI_NOTIF(1, DEATH_SELF_POISON,                    NO_MSG,        INFO_DEATH_SELF_POISON,                    CENTER_DEATH_SELF_POISON) \
 	MSG_MULTI_NOTIF(1, DEATH_SELF_ROT,                       NO_MSG,        INFO_DEATH_SELF_ROT,                       CENTER_DEATH_SELF_ROT) \
 	MSG_MULTI_NOTIF(1, DEATH_SELF_SHOOTING_STAR,             NO_MSG,        INFO_DEATH_SELF_SHOOTING_STAR,             CENTER_DEATH_SELF_SHOOTING_STAR) \
 	MSG_MULTI_NOTIF(1, DEATH_SELF_SLIME,                     NO_MSG,        INFO_DEATH_SELF_SLIME,                     CENTER_DEATH_SELF_SLIME) \

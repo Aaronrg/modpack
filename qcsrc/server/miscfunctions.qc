@@ -985,6 +985,7 @@ void readlevelcvars(void)
 	CHECK_MUTATOR_ADD("g_campcheck", mutator_campcheck, 1);
 	CHECK_MUTATOR_ADD("g_za", mutator_zombie_apocalypse, cvar("g_monsters"));
 	CHECK_MUTATOR_ADD("g_walljump", mutator_walljump, 1);
+	CHECK_MUTATOR_ADD("g_status_effects", mutator_status_effects, 1);
 	
 	#undef CHECK_MUTATOR_ADD
 	

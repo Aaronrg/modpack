@@ -58,6 +58,7 @@ mutators/mutator_overkill.qh
 mutators/mutator_freeze.qh
 mutators/mutator_minstagib.qh
 mutators/mutator_nades.qh
+mutators/mutator_status_effects.qh
 
 //// tZork Turrets ////
 tturrets/include/turrets_early.qh
@@ -286,6 +287,7 @@ mutators/mutator_riflearena.qc
 mutators/mutator_campcheck.qc
 mutators/mutator_zombie_apocalypse.qc
 mutators/mutator_walljump.qc
+mutators/mutator_status_effects.qc
 
 ../warpzonelib/anglestransform.qc
 ../warpzonelib/mathlib.qc
