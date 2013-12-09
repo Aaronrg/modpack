@@ -23,6 +23,7 @@ void Projectile_ResetTrail(vector to)
 	self.trail_oldtime = time;
 }
 
+float autocvar__colorprojectiles;
 void Projectile_DrawTrail(vector to)
 {
 	vector from;
@@ -41,6 +42,7 @@ void Projectile_DrawTrail(vector to)
 	if (self.traileffect)
 	{
 		particles_alphamin = particles_alphamax = particles_fade = sqrt(self.alpha);
+		particles_colormin = particles_colormax = '1 1 1' + (self.colormod - '1 1 1') * autocvar__colorprojectiles;
 		boxparticles(self.traileffect, self, from, to, self.velocity, self.velocity, 1, PARTICLES_USEALPHA | PARTICLES_USEFADE | PARTICLES_DRAWASTRAIL);
 	}
 }
@@ -260,6 +262,12 @@ void Ent_Projectile()
 		}
 
 		self.team = ReadByte() - 1;
+		
+		float own = ReadByte();
+		if(own)
+			self.colormod = colormapPaletteColor(MapForcePlayerColor_ByPlayer(own - 1) & 0x0F, TRUE) * 2;
+		else
+			self.colormod = '1 1 1';
 	}
 
 	if(f & 2)
@@ -336,7 +344,6 @@ void Ent_Projectile()
 
 		self.mins = '0 0 0';
 		self.maxs = '0 0 0';
-		self.colormod = '0 0 0';
 		self.move_touch = SUB_Stop;
 		self.move_movetype = MOVETYPE_TOSS;
 		self.alphamod = 1;
@@ -475,6 +482,7 @@ void Ent_Projectile()
 			self.avelocity = randomvec() * 720;
 		}
 		
+		self.glowmod = self.colormod;
 		setsize(self, self.mins, self.maxs);
 	}
 

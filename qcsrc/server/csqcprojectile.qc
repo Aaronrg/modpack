@@ -50,6 +50,7 @@ float CSQCProjectile_SendEntity(entity to, float sf)
 		}
 
 		WriteByte(MSG_ENTITY, self.realowner.team);
+		WriteByte(MSG_ENTITY, num_for_edict(self.realowner));
 	}
 
 	if(sf & 2)

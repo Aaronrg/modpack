@@ -630,6 +630,81 @@ void draw_endBoldFont()
 }
 
 
+// factored out forceplayercolor stuff
+float MapForcePlayerColor_ByColor(float islocalplayer, float cm)
+{
+	float isfriend;
+
+	if(teamplay)
+		isfriend = (cm == 1024 + 17 * myteam);
+	else
+		isfriend = islocalplayer;
+
+	if(teamplay)
+	{
+		// own team's color is never forced
+		float forcecolor_friend = 0;
+		float forcecolor_enemy = 0;
+		float teams_count = 0;
+		entity tm;
+
+		for(tm = teams.sort_next; tm; tm = tm.sort_next)
+		if(tm.team != NUM_SPECTATOR)
+			++teams_count;
+
+		if(autocvar_cl_forcemyplayercolors)
+			forcecolor_friend = 1024 + autocvar_cl_forcemyplayercolors;
+		if(autocvar_cl_forceplayercolors && teams_count == 2)
+			forcecolor_enemy = 1024 + autocvar__cl_color;
+
+		if(forcecolor_enemy && !forcecolor_friend)
+		{
+			// only enemy color is forced?
+			// verify it is not equal to the friend color
+			if(forcecolor_enemy == 1024 + 17 * myteam)
+				forcecolor_enemy = 0;
+		}
+
+		if(forcecolor_friend && !forcecolor_enemy)
+		{
+			// only friend color is forced?
+			// verify it is not equal to the enemy color
+			for(tm = teams.sort_next; tm; tm = tm.sort_next)
+				// note: we even compare against our own team.
+				// if we rejected because we matched our OWN team color,
+				// this is not bad; we then simply keep our color as is
+				// anyway.
+				if(forcecolor_friend == 1024 + 17 * tm.team)
+					forcecolor_friend = 0;
+		}
+
+		if(cm == 1024 + 17 * myteam)
+		{
+			if(forcecolor_friend)
+				return forcecolor_friend;
+		}
+		else
+		{
+			if(forcecolor_enemy)
+				return forcecolor_enemy;
+		}
+	}
+	else
+	{
+		if(autocvar_cl_forcemyplayercolors && islocalplayer)
+			return 1024 + autocvar_cl_forcemyplayercolors;
+		else if(autocvar_cl_forceplayercolors)
+			return stof(getplayerkeyvalue(player_localnum, "colors")) + 1024;
+	}
+
+	return cm;
+}
+
+float MapForcePlayerColor_ByPlayer(float pl)
+{
+	return MapForcePlayerColor_ByColor(pl == player_localnum, stof(getplayerkeyvalue(pl, "colors")) + 1024);
+}
+
 #define MAX_ACCURACY_LEVELS 10
 float acc_lev[MAX_ACCURACY_LEVELS];
 vector acc_col[MAX_ACCURACY_LEVELS];
