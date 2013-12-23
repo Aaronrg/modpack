@@ -25,3 +25,5 @@ Download the 2 server packages to your Xonotic/data folder & make sure they're a
 
 To update, run this from a terminal in the esk-modpack folder: git pull  
 Once this finishes, repeat previous usage steps
+
+*Shrooms was here*
