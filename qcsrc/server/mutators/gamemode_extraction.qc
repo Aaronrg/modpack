@@ -1,6 +1,11 @@
+MUTATOR_HOOKFUNCTION(ex_PlayerDies)
+{
+	return FALSE;
+}
+
 MUTATOR_DEFINITION(gamemode_extraction)
 {
-	//MUTATOR_HOOK(PlayerSpawn, ex_PlayerSpawn, CBC_ORDER_ANY);
+	MUTATOR_HOOK(PlayerDies, ex_PlayerDies, CBC_ORDER_ANY);
 
 	MUTATOR_ONADD
 	{
