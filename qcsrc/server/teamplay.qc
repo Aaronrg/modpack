@@ -227,6 +227,16 @@ void InitGameplayMode()
 		MUTATOR_ADD(gamemode_infection);
 	}
 
+	if(g_extraction)
+	{
+		fraglimit_override = autocvar_g_extraction_point_limit;
+		leadlimit_override = autocvar_g_extraction_point_leadlimit;
+		ActivateTeamplay();
+		if(autocvar_g_extraction_team_spawns)
+			have_team_spawns = -1; // request team spawns
+		MUTATOR_ADD(gamemode_extraction);
+	}
+
 	if(teamplay)
 		entcs_init();
 

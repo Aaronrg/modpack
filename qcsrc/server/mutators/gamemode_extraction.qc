@@ -1,0 +1,18 @@
+MUTATOR_DEFINITION(gamemode_extraction)
+{
+	//MUTATOR_HOOK(PlayerSpawn, ex_PlayerSpawn, CBC_ORDER_ANY);
+
+	MUTATOR_ONADD
+	{
+		if(time > 1) // game loads at time 1
+			error("This is a game type and it cannot be added at runtime.");
+	}
+
+	MUTATOR_ONREMOVE
+	{
+		print("This is a game type and it cannot be removed at runtime.");
+		return -1;
+	}
+
+	return 0;
+}
