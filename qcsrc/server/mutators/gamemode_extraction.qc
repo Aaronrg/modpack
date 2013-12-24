@@ -1,3 +1,13 @@
+void spawnfunc_extraction_egg()
+{
+	if(!g_extraction) { remove(self); return; }
+}
+
+void spawnfunc_extraction_basket()
+{
+	if(!g_extraction) { remove(self); return; }
+}
+
 MUTATOR_HOOKFUNCTION(ex_PlayerDies)
 {
 	return FALSE;
