@@ -1,0 +1,4 @@
+float ex_egg_count;
+float MAX_EGGS = 12;
+
+entity ex_egg[MAX_EGGS];
