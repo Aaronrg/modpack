@@ -24,4 +24,6 @@ Copy the autoexec folder from esk-modpack to Xonotic/data
 Download the 2 server packages to your Xonotic/data folder & make sure they're available on your map download server  
 
 To update, run this from a terminal in the esk-modpack folder: git pull  
-Once this finishes, repeat previous usage steps
+Once this finishes, repeat previous usage steps.
+
+Test.
