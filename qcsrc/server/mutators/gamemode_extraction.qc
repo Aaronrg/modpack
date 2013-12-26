@@ -15,8 +15,8 @@ MUTATOR_HOOKFUNCTION(ex_PlayerDies)
 void spawnfunc_extraction_egg()
 {
 	if(!g_extraction) { remove(self); return; }
-		ex_egg_count += 1;
-		ex_egg[ex_egg_count] = self;
+	ex_egg_count += 1;
+	ex_egg[ex_egg_count] = self;
 }
 
 void spawnfunc_extraction_basket()
