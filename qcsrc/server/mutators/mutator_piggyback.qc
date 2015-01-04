@@ -175,10 +175,10 @@ MUTATOR_HOOKFUNCTION(pb_PlayerThink)
 	if(self.movement || (self.BUTTON_JUMP || self.BUTTON_CROUCH))
 	if(!self.pbhost.enemy)
 	{
-		float forw, rit, updown = 0;
+		float forw, rit, updown = 1;
 		vector wishvel = '0 0 0';
 
-		makevectors(self.angles);
+		makevectors(self.v_angle);
 		if(self.BUTTON_JUMP)
 			updown = 500;
 		else if(self.BUTTON_CROUCH)

@@ -2,9 +2,9 @@
 REGISTER_MONSTER(
 /* MON_##id   */ WYVERN,
 /* functions  */ M_Wyvern, M_Wyvern_Attack,
-/* spawnflags */ MONSTER_TYPE_FLY | MONSTER_SIZE_BROKEN | MON_FLAG_RANGED | MON_FLAG_RIDE,
-/* mins,maxs  */ '-20 -20 -58', '20 20 20',
-/* model      */ "wizard.mdl",
+/* spawnflags */ MONSTER_TYPE_FLY | MON_FLAG_RANGED | MON_FLAG_RIDE,
+/* mins,maxs  */ '-30 -30 -58', '30 30 40',
+/* model      */ "dragon.dpm",
 /* netname    */ "wyvern",
 /* fullname   */ _("Wyvern")
 );
@@ -23,11 +23,15 @@ float autocvar_g_monster_wyvern_speed_stop;
 float autocvar_g_monster_wyvern_speed_run;
 float autocvar_g_monster_wyvern_speed_walk;
 
-const float wyvern_anim_hover	= 0;
-const float wyvern_anim_fly		= 1;
-const float wyvern_anim_magic	= 2;
-const float wyvern_anim_pain	= 3;
-const float wyvern_anim_death	= 4;
+const float wyvern_anim_idle		= 0;
+const float wyvern_anim_glide		= 1;
+const float wyvern_anim_fly			= 2;
+const float wyvern_anim_pain1		= 3;
+const float wyvern_anim_pain2		= 4;
+const float wyvern_anim_melee		= 5;
+const float wyvern_anim_fireball	= 6;
+const float wyvern_anim_dying		= 7;
+const float wyvern_anim_dead		= 8;
 
 void M_Wyvern_Attack_Fireball_Explode()
 {
@@ -36,7 +40,8 @@ void M_Wyvern_Attack_Fireball_Explode()
 	{
 		Send_Effect(EFFECT_FIREBALL_EXPLODE, self.origin, '0 0 0', 1);
 
-		RadiusDamage(self, self.realowner, (autocvar_g_monster_wyvern_attack_fireball_damage), (autocvar_g_monster_wyvern_attack_fireball_edgedamage), (autocvar_g_monster_wyvern_attack_fireball_force), world, world, (autocvar_g_monster_wyvern_attack_fireball_radius), self.projectiledeathtype, world);
+		RadiusDamage(self, self.realowner, (autocvar_g_monster_wyvern_attack_fireball_damage), (autocvar_g_monster_wyvern_attack_fireball_edgedamage), 
+			(autocvar_g_monster_wyvern_attack_fireball_force), world, world, (autocvar_g_monster_wyvern_attack_fireball_radius), self.projectiledeathtype, world);
 
 		for(e = world; (e = findfloat(e, takedamage, DAMAGE_AIM)); ) if(vlen(e.origin - self.origin) <= (autocvar_g_monster_wyvern_attack_fireball_radius))
 			Fire_AddDamage(e, self, 5 * MONSTER_SKILLMOD(self), (autocvar_g_monster_wyvern_attack_fireball_damagetime), self.projectiledeathtype);
@@ -84,6 +89,7 @@ float M_Wyvern_Attack(float attack_type)
 		{
 			self.attack_finished_single = time + 1.2;
 			self.anim_finished = time + 1.2;
+			self.frame = wyvern_anim_fireball;
 
 			M_Wyvern_Attack_Fireball();
 
@@ -107,6 +113,10 @@ float M_Wyvern(float req)
 	{
 		case MR_THINK:
 		{
+			if(self.monster_moveto_z < 0)
+				self.m_anim_run = wyvern_anim_glide;
+			else
+				self.m_anim_run = wyvern_anim_fly;
 			return TRUE;
 		}
 		case MR_PAIN:
@@ -115,7 +125,7 @@ float M_Wyvern(float req)
 		}
 		case MR_DEATH:
 		{
-			self.frame = wyvern_anim_death;
+			self.frame = wyvern_anim_dying;
 			self.velocity_x = -200 + 400 * random();
 			self.velocity_y = -200 + 400 * random();
 			self.velocity_z = 100 + 100 * random();
@@ -129,12 +139,12 @@ float M_Wyvern(float req)
 			if(!self.stopspeed) { self.stopspeed = (autocvar_g_monster_wyvern_speed_stop); }
 			if(!self.damageforcescale) { self.damageforcescale = (autocvar_g_monster_wyvern_damageforcescale); }
 
-			self.m_anim_walk = wyvern_anim_hover;
+			self.m_anim_walk = wyvern_anim_glide;
 			self.m_anim_run = wyvern_anim_fly;
-			self.m_anim_idle = wyvern_anim_hover;
+			self.m_anim_idle = wyvern_anim_idle;
 
 			self.monster_loot = spawnfunc_item_cells;
-			self.frame = wyvern_anim_hover;
+			self.frame = wyvern_anim_idle;
 
 			return TRUE;
 		}
