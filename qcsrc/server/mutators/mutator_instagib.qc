@@ -360,6 +360,8 @@ MUTATOR_HOOKFUNCTION(instagib_PlayerDies)
 	)
 		frag_damage = 1000; // always gib if it was a vaporizer death
 
+	(get_weaponinfo(WEP_VAPORIZER)).weaponthrowable = 1; // throwing is forbidden by a mutator hook, enabling this for drop on death
+
 	return FALSE;
 }
 
@@ -449,7 +451,6 @@ MUTATOR_DEFINITION(mutator_instagib)
 		
 		if(cvar("g_instagib_withmines"))
 			(get_weaponinfo(WEP_MINE_LAYER)).spawnflags &= ~WEP_FLAG_MUTATORBLOCKED;
-		(get_weaponinfo(WEP_VAPORIZER)).weaponthrowable = 1; // we allow throwing, then forbid it above (allows for dropping on death)
 
 		g_instagib = cvar("g_instagib");
 	}
