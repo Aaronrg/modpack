@@ -415,7 +415,7 @@ void HUD_Weapons(void)
 	float i, f, a;
 	float screen_ar, center_x = 0, center_y;
 	float weapon_count, weapon_id;
-	float row, column, rows = 0, columns;
+	float row, column, rows = 0, columns = 0;
 	float aspect = autocvar_hud_panel_weapons_aspect;
 
 	float panel_weapon_accuracy;
@@ -433,7 +433,7 @@ void HUD_Weapons(void)
 	float fadetime = max(0, autocvar_hud_panel_weapons_complainbubble_fadetime);
 
 	vector weapon_pos, weapon_size = '0 0 0';
-	local noref vector old_panel_size; // fteqcc sucks
+	local noref vector max_panel_size; // fteqcc sucks
 	vector color;
 
 	// check to see if we want to continue
@@ -519,38 +519,41 @@ void HUD_Weapons(void)
 			return;
 		}
 
-		old_panel_size = panel_size;
-		if(panel_bg_padding)
-			old_panel_size -= '2 2 0' * panel_bg_padding;
+		max_panel_size = panel_size - '2 2 0' * panel_bg_padding;
 
-		// first find values for the standard table (with all the weapons)
-		rows = old_panel_size_y/old_panel_size_x;
-		rows = bound(1, floor((sqrt(4 * aspect * rows * WEP_COUNT + rows * rows) + rows + 0.5) / 2), WEP_COUNT);
-		columns = ceil(WEP_COUNT/rows);
-		weapon_size_x = old_panel_size_x / columns;
-		weapon_size_y = old_panel_size_y / rows;
-
-		// change table values to include only the owned weapons
-		float columns_save = columns;
-		if(weapon_count <= rows)
+		// calculate distribution and size of table cells
+		if(max_panel_size_x > max_panel_size_y)
 		{
-			rows = weapon_count;
-			columns = 1;
+			while(weapon_count > columns * rows)
+			{
+				++rows;
+				columns = ceil(max_panel_size_x / (max_panel_size_y / rows * aspect));
+			}
+
+			weapon_size_x = max_panel_size_x / columns;
+			weapon_size_y = max_panel_size_y / rows;
+			columns = ceil(weapon_count / rows);
 		}
 		else
-			columns = ceil(weapon_count / rows);
+		{
+			while(weapon_count > columns * rows)
+			{
+				++columns;
+				rows = ceil(max_panel_size_y / (max_panel_size_x / columns / aspect));
+			}
 
-		// enlarge weapon_size to match desired aspect ratio in order to capitalize on panel space
-		if(columns < columns_save)
-			weapon_size_x = min(old_panel_size_x / columns, aspect * weapon_size_y);
+			weapon_size_x = max_panel_size_x / columns;
+			weapon_size_y = max_panel_size_y / rows;
+			rows = ceil(weapon_count / columns);
+		}
 
 		// reduce size of the panel
 		panel_size_x = columns * weapon_size_x;
 		panel_size_y = rows * weapon_size_y;
-		panel_pos_x += (old_panel_size_x - panel_size_x) / 2;
-		panel_pos_y += (old_panel_size_y - panel_size_y) / 2;
-		if(panel_bg_padding)
-			panel_size += '2 2 0' * panel_bg_padding;
+		panel_pos_x += (max_panel_size_x - panel_size_x) / 2;
+		panel_pos_y += (max_panel_size_y - panel_size_y) / 2;
+
+		panel_size += '2 2 0' * panel_bg_padding;
 	}
 	else
 		weapon_count = WEP_COUNT;
@@ -689,7 +692,9 @@ void HUD_Weapons(void)
 	if(autocvar_hud_panel_weapons_accuracy)
 		Accuracy_LoadColors();
 
+	// draw items
 	row = column = 0;
+	vector label_size = '1 1 0' * min(weapon_size_x, weapon_size_y) * bound(0, autocvar_hud_panel_weapons_label_scale, 1);
 	for(i = 0; i <= WEP_LAST-WEP_FIRST; ++i)
 	{
 		// retrieve information about the current weapon to be drawn
@@ -734,15 +739,15 @@ void HUD_Weapons(void)
 			switch(autocvar_hud_panel_weapons_label)
 			{
 				case 1: // weapon number
-					drawstring(weapon_pos, ftos(weapon_id), '1 1 0' * 0.5 * weapon_size_y, '1 1 1', panel_fg_alpha, DRAWFLAG_NORMAL);
+					drawstring(weapon_pos, ftos(weapon_id), label_size, '1 1 1', panel_fg_alpha, DRAWFLAG_NORMAL);
 					break;
 
 				case 2: // bind
-					drawstring(weapon_pos, getcommandkey(ftos(weapon_id), strcat("weapon_group_", ftos(weapon_id))), '1 1 0' * 0.5 * weapon_size_y, '1 1 1', panel_fg_alpha, DRAWFLAG_NORMAL);
+					drawstring(weapon_pos, getcommandkey(ftos(weapon_id), strcat("weapon_group_", ftos(weapon_id))), label_size, '1 1 1', panel_fg_alpha, DRAWFLAG_NORMAL);
 					break;
 
 				case 3: // weapon name
-					drawstring(weapon_pos, strtolower(self.message), '1 1 0' * 0.5 * weapon_size_y, '1 1 1', panel_fg_alpha, DRAWFLAG_NORMAL);
+					drawstring(weapon_pos, strtolower(self.message), label_size, '1 1 1', panel_fg_alpha, DRAWFLAG_NORMAL);
 					break;
 
 				default: // nothing
@@ -880,74 +885,76 @@ void DrawAmmoNades(vector myPos, vector mySize, float draw_expanding, float expa
 	}
 }
 
-void DrawAmmoItem(vector myPos, vector mySize, .float ammotype, float currently_selected, float infinite_ammo)
+void DrawAmmoItem(vector myPos, vector mySize, .float ammoType, float isCurrent, float isInfinite)
 {
-	float a = 0;
-	if(ammotype != ammo_none)
+	if(ammoType == ammo_none)
+		return;
+
+	// Initialize variables
+
+	float ammo;
+	if(autocvar__hud_configure)
 	{
-		if(autocvar__hud_configure)
-		{
-			currently_selected = (ammotype == ammo_rockets); //rockets always selected
-			a = 60;
-		}
-		else
-		{
-			// how much ammo do we have of this ammotype?
-			a = getstati(GetAmmoStat(ammotype));
-		}
+		isCurrent = (ammoType == ammo_rockets); // Rockets always current
+		ammo = 60;
 	}
 	else
+		ammo = getstati(GetAmmoStat(ammoType));
+
+	if(!isCurrent)
 	{
-		#if 0
-		infinite_ammo = TRUE;
-		#else
-		return; // just don't draw infinite ammo at all.
-		#endif
+		float scale = bound(0, autocvar_hud_panel_ammo_noncurrent_scale, 1);
+		myPos = myPos + (mySize - mySize * scale) * 0.5;
+		mySize = mySize * scale;
 	}
 
-	vector color;
-	if(infinite_ammo)
-		color = '0 0.5 0.75';
-	else if(a < 10)
-		color = '0.7 0 0';
-	else
-		color = '1 1 1';
-
-	float theAlpha;
-	if(currently_selected)
-		theAlpha = 1;
-	else
-		theAlpha = 0.7;
-
-	vector picpos, numpos;
+	vector iconPos, textPos;
 	if(autocvar_hud_panel_ammo_iconalign)
 	{
-		numpos = myPos;
-		picpos = myPos + eX * 2 * mySize_y;
+		iconPos = myPos + eX * 2 * mySize_y;
+		textPos = myPos;
 	}
 	else
 	{
-		numpos = myPos + eX * mySize_y;
-		picpos = myPos;
+		iconPos = myPos;
+		textPos = myPos + eX * mySize_y;
 	}
 
-	if(currently_selected)
+	float isShadowed = (ammo <= 0 && !isCurrent && !isInfinite);
+
+	vector iconColor = isShadowed ? '0 0 0' : '1 1 1';
+	vector textColor;
+	if(isInfinite)
+		textColor = '0.2 0.95 0';
+	else if(isShadowed)
+		textColor = '0 0 0';
+	else if(ammo < 10)
+		textColor = '0.8 0.04 0';
+	else
+		textColor = '1 1 1';
+
+	float alpha;
+	if(isCurrent)
+		alpha = panel_fg_alpha;
+	else if(isShadowed)
+		alpha = panel_fg_alpha * bound(0, autocvar_hud_panel_ammo_noncurrent_alpha, 1) * 0.5;
+	else
+		alpha = panel_fg_alpha * bound(0, autocvar_hud_panel_ammo_noncurrent_alpha, 1);
+
+	string text = isInfinite ? "\xE2\x88\x9E" : ftos(ammo); // Use infinity symbol (U+221E)
+
+	// Draw item
+
+	if(isCurrent)
 		drawpic_aspect_skin(myPos, "ammo_current_bg", mySize, '1 1 1', panel_fg_alpha, DRAWFLAG_NORMAL);
 
-	if(a > 0 && autocvar_hud_panel_ammo_progressbar)
-		HUD_Panel_DrawProgressBar(myPos + eX * autocvar_hud_panel_ammo_progressbar_xoffset * mySize_x, mySize - eX * autocvar_hud_panel_ammo_progressbar_xoffset * mySize_x, autocvar_hud_panel_ammo_progressbar_name, a/autocvar_hud_panel_ammo_maxammo, 0, 0, color, autocvar_hud_progressbar_alpha * panel_fg_alpha * theAlpha, DRAWFLAG_NORMAL);
+	if(ammo > 0 && autocvar_hud_panel_ammo_progressbar)
+		HUD_Panel_DrawProgressBar(myPos + eX * autocvar_hud_panel_ammo_progressbar_xoffset * mySize_x, mySize - eX * autocvar_hud_panel_ammo_progressbar_xoffset * mySize_x, autocvar_hud_panel_ammo_progressbar_name, ammo/autocvar_hud_panel_ammo_maxammo, 0, 0, textColor, autocvar_hud_progressbar_alpha * alpha, DRAWFLAG_NORMAL);
 
 	if(autocvar_hud_panel_ammo_text)
-	{
-		if(a > 0 || infinite_ammo)
-			drawstring_aspect(numpos, ftos(a), eX * (2/3) * mySize_x + eY * mySize_y, color, panel_fg_alpha * theAlpha, DRAWFLAG_NORMAL);
-		else // "ghost" ammo count
-			drawstring_aspect(numpos, ftos(a), eX * (2/3) * mySize_x + eY * mySize_y, '0 0 0', panel_fg_alpha * theAlpha * 0.5, DRAWFLAG_NORMAL);
-	}
-	if(a > 0 || infinite_ammo)
-		drawpic_aspect_skin(picpos, GetAmmoPicture(ammotype), '1 1 0' * mySize_y, '1 1 1', panel_fg_alpha * theAlpha, DRAWFLAG_NORMAL);
-	else // "ghost" ammo icon
-		drawpic_aspect_skin(picpos, GetAmmoPicture(ammotype), '1 1 0' * mySize_y, '0 0 0', panel_fg_alpha * theAlpha * 0.5, DRAWFLAG_NORMAL);
+		drawstring_aspect(textPos, text, eX * (2/3) * mySize_x + eY * mySize_y, textColor, alpha, DRAWFLAG_NORMAL);
+
+	drawpic_aspect_skin(iconPos, GetAmmoPicture(ammoType), '1 1 0' * mySize_y, iconColor, alpha, DRAWFLAG_NORMAL);
 }
 
 float nade_prevstatus;
@@ -1045,13 +1052,13 @@ void HUD_Ammo(void)
 				TRUE,
 				infinite_ammo
 			);
+		}
 
 		++row;
 		if(row >= rows)
 		{
 			row = 0;
 			column = column + 1;
-		}
 		}
 	}
 	else
@@ -1249,7 +1256,7 @@ void HUD_Powerups(void)
 
 	if(superweapons_time)
 	{
-		const float maxsuperweapons = 30;
+		float maxsuperweapons = 30;
 		float superweapons = ceil(superweapons_time);
 		if(autocvar_hud_panel_powerups_progressbar)
 			HUD_Panel_DrawProgressBar(pos + superweapons_offset, mySize, autocvar_hud_panel_powerups_progressbar_superweapons, superweapons/maxsuperweapons, is_vertical, superweapons_baralign, autocvar_hud_progressbar_superweapons_color, autocvar_hud_progressbar_alpha * panel_fg_alpha, DRAWFLAG_NORMAL);
@@ -1923,7 +1930,7 @@ void HUD_Radar_Mouse()
 	}
 
 
-	const vector cursorsize = '32 32 0';
+	vector cursorsize = '32 32 0';
 	drawpic(mousepos-'8 4 0', strcat("gfx/menu/", autocvar_menu_skin, "/cursor.tga"), cursorsize, '1 1 1', 0.8, DRAWFLAG_NORMAL);
 }
 
@@ -2168,7 +2175,7 @@ void HUD_Score_Rankings(vector pos, vector mySize, entity me)
 
 	float name_size = mySize_x*0.75;
 	float spacing_size = mySize_x*0.04;
-	const float highlight_alpha = 0.2;
+	float highlight_alpha = 0.2;
 	float i = 0, me_printed = 0, first_pl = 0;
 	string s;
 	if (autocvar__hud_configure)
@@ -3374,313 +3381,135 @@ void HUD_Mod_CTF(vector pos, vector mySize)
 }
 
 // Keyhunt HUD modicon section
-float redkey_prevframe, bluekey_prevframe, yellowkey_prevframe, pinkkey_prevframe; // status during previous frame
-float redkey_prevstatus, bluekey_prevstatus, yellowkey_prevstatus, pinkkey_prevstatus; // last remembered status
-float redkey_statuschange_time, bluekey_statuschange_time, yellowkey_statuschange_time, pinkkey_statuschange_time; // time when the status changed
-
-void HUD_Mod_KH_Reset(void)
-{
-	redkey_prevstatus = bluekey_prevstatus = yellowkey_prevstatus = pinkkey_prevstatus = 0;
-	redkey_prevframe = bluekey_prevframe = yellowkey_prevframe = pinkkey_prevframe = 0;
-	redkey_statuschange_time = bluekey_statuschange_time = yellowkey_statuschange_time = pinkkey_statuschange_time = 0;
-}
+vector KH_SLOTS[4];
 
 void HUD_Mod_KH(vector pos, vector mySize)
 {
-	vector redkey_pos, bluekey_pos, yellowkey_pos, pinkkey_pos;
-	vector key_size;
-	float f; // every function should have that
+	// Read current state
 
-	float redkey, bluekey, yellowkey, pinkkey; // current status
-	float redkey_statuschange_elapsedtime, bluekey_statuschange_elapsedtime, yellowkey_statuschange_elapsedtime, pinkkey_statuschange_elapsedtime; // time since the status changed
-	float stat_items;
-	float fs, fs2, fs3, size1, size2;
-	vector e1, e2;
+	float state = getstati(STAT_KH_KEYSTATUS);
+	float i, key_state;
+	float all_keys, team1_keys, team2_keys, team3_keys, team4_keys, dropped_keys, carrying_keys;
+	all_keys = team1_keys = team2_keys = team3_keys = team4_keys = dropped_keys = carrying_keys = 0;
 
-	stat_items = getstati(STAT_KH_KEYSTATUS, 0, 24);
-	redkey = (stat_items/KH_RED_KEY_TAKEN) & 3;
-	bluekey = (stat_items/KH_BLUE_KEY_TAKEN) & 3;
-	yellowkey = (stat_items/KH_YELLOW_KEY_TAKEN) & 3;
-	pinkkey = (stat_items/KH_PINK_KEY_TAKEN) & 3;
-
-	if(redkey || bluekey || yellowkey || pinkkey)
+	if(state)
 		mod_active = 1;
 	else
 		mod_active = 0;
 
-	if(autocvar__hud_configure)
+	for(i = 0; i < 4; ++i)
 	{
-		redkey = 1;
-		bluekey = 2;
-		if(team_count >= 3)
-			yellowkey = 2;
-		if(team_count >= 4)
-			pinkkey = 3;
+		key_state = (bitshift(state, i * -5) & 31) - 1;
+
+		if(key_state == -1)
+			continue;
+
+		if(key_state == 30)
+		{
+			++carrying_keys;
+			key_state = myteam;
+		}
+
+		switch(key_state)
+		{
+			case NUM_TEAM_1: ++team1_keys; break;
+			case NUM_TEAM_2: ++team2_keys; break;
+			case NUM_TEAM_3: ++team3_keys; break;
+			case NUM_TEAM_4: ++team4_keys; break;
+			case 29: ++dropped_keys; break;
+		}
+
+		++all_keys;
 	}
 
-	// when status CHANGES, set old status into prevstatus and current status into status
-	if (redkey != redkey_prevframe)
+	// Calculate slot measurements
+
+	vector slot_size;
+
+	if(all_keys == 4 && mySize_x * 0.5 < mySize_y && mySize_y * 0.5 < mySize_x)
 	{
-		redkey_statuschange_time = time;
-		redkey_prevstatus = redkey_prevframe;
-		redkey_prevframe = redkey;
-	}
-
-	if (bluekey != bluekey_prevframe)
-	{
-		bluekey_statuschange_time = time;
-		bluekey_prevstatus = bluekey_prevframe;
-		bluekey_prevframe = bluekey;
-	}
-
-	if (yellowkey != yellowkey_prevframe)
-	{
-		yellowkey_statuschange_time = time;
-		yellowkey_prevstatus = yellowkey_prevframe;
-		yellowkey_prevframe = yellowkey;
-	}
-
-	if (pinkkey != pinkkey_prevframe)
-	{
-		pinkkey_statuschange_time = time;
-		pinkkey_prevstatus = pinkkey_prevframe;
-		pinkkey_prevframe = pinkkey;
-	}
-
-	redkey_statuschange_elapsedtime = time - redkey_statuschange_time;
-	bluekey_statuschange_elapsedtime = time - bluekey_statuschange_time;
-	yellowkey_statuschange_elapsedtime = time - yellowkey_statuschange_time;
-	pinkkey_statuschange_elapsedtime = time - pinkkey_statuschange_time;
-
-	float BLINK_FACTOR = 0.15;
-	float BLINK_BASE = 0.85;
-	// note:
-	//   RMS = sqrt(BLINK_BASE^2 + 0.5 * BLINK_FACTOR^2)
-	// thus
-	//   BLINK_BASE = sqrt(RMS^2 - 0.5 * BLINK_FACTOR^2)
-	// ensure RMS == 1
-	float BLINK_FREQ = 5; // circle frequency, = 2*pi*frequency in hertz
-
-	string red_icon, red_icon_prevstatus;
-	float red_alpha, red_alpha_prevstatus;
-	red_alpha = red_alpha_prevstatus = 1;
-	switch(redkey) {
-		case 1: red_icon = "kh_red_key"; break;
-		case 2: red_icon = string_null; break;
-		case 3: red_icon = "kh_red_key"; red_alpha = BLINK_BASE + BLINK_FACTOR * cos(time * BLINK_FREQ); break;
-		default:
-			red_icon = string_null;
-			break;
-	}
-	switch(redkey_prevstatus) {
-		case 1: red_icon_prevstatus = "kh_red_key"; break;
-		case 2: red_icon_prevstatus = string_null; break;
-		case 3: red_icon_prevstatus = "kh_red_key"; red_alpha_prevstatus = BLINK_BASE + BLINK_FACTOR * cos(time * BLINK_FREQ); break;
-		default:
-			if(redkey == 3)
-				red_icon_prevstatus = "kh_red_key"; // make it more visible
-			else
-				red_icon_prevstatus = string_null;
-			break;
-	}
-
-	string blue_icon, blue_icon_prevstatus;
-	float blue_alpha, blue_alpha_prevstatus;
-	blue_alpha = blue_alpha_prevstatus = 1;
-	switch(bluekey) {
-		case 1: blue_icon = "kh_blue_key"; break;
-		case 2: blue_icon = string_null; break;
-		case 3: blue_icon = "kh_blue_key"; blue_alpha = BLINK_BASE + BLINK_FACTOR * cos(time * BLINK_FREQ); break;
-		default:
-			blue_icon = string_null;
-			break;
-	}
-	switch(bluekey_prevstatus) {
-		case 1: blue_icon_prevstatus = "kh_blue_key"; break;
-		case 2: blue_icon_prevstatus = string_null; break;
-		case 3: blue_icon_prevstatus = "kh_blue_key"; blue_alpha_prevstatus = BLINK_BASE + BLINK_FACTOR * cos(time * BLINK_FREQ); break;
-		default:
-			if(bluekey == 3)
-				blue_icon_prevstatus = "kh_blue_key"; // make it more visible
-			else
-				blue_icon_prevstatus = string_null;
-			break;
-	}
-
-	string yellow_icon, yellow_icon_prevstatus;
-	float yellow_alpha, yellow_alpha_prevstatus;
-	yellow_alpha = yellow_alpha_prevstatus = 1;
-	switch(yellowkey) {
-		case 1: yellow_icon = "kh_yellow_key"; break;
-		case 2: yellow_icon = string_null; break;
-		case 3: yellow_icon = "kh_yellow_key"; yellow_alpha = BLINK_BASE + BLINK_FACTOR * cos(time * BLINK_FREQ); break;
-		default:
-			yellow_icon = string_null;
-			break;
-	}
-	switch(yellowkey_prevstatus) {
-		case 1: yellow_icon_prevstatus = "kh_yellow_key"; break;
-		case 2: yellow_icon_prevstatus = string_null; break;
-		case 3: yellow_icon_prevstatus = "kh_yellow_key"; yellow_alpha_prevstatus = BLINK_BASE + BLINK_FACTOR * cos(time * BLINK_FREQ); break;
-		default:
-			if(yellowkey == 3)
-				yellow_icon_prevstatus = "kh_yellow_key"; // make it more visible
-			else
-				yellow_icon_prevstatus = string_null;
-			break;
-	}
-	
-	string pink_icon, pink_icon_prevstatus;
-	float pink_alpha, pink_alpha_prevstatus;
-	pink_alpha = pink_alpha_prevstatus = 1;
-	switch(pinkkey) {
-		case 1: pink_icon = "kh_pink_key"; break;
-		case 2: pink_icon = string_null; break;
-		case 3: pink_icon = "kh_pink_key"; pink_alpha = BLINK_BASE + BLINK_FACTOR * cos(time * BLINK_FREQ); break;
-		default:
-			pink_icon = string_null;
-			break;
-	}
-	switch(pinkkey_prevstatus) {
-		case 1: pink_icon_prevstatus = "kh_pink_key"; break;
-		case 2: pink_icon_prevstatus = string_null; break;
-		case 3: pink_icon_prevstatus = "kh_pink_key"; pink_alpha_prevstatus = BLINK_BASE + BLINK_FACTOR * cos(time * BLINK_FREQ); break;
-		default:
-			if(pinkkey == 3)
-				pink_icon_prevstatus = "kh_pink_key"; // make it more visible
-			else
-				pink_icon_prevstatus = string_null;
-			break;
-	}
-	
-	switch(team_count)
-	{
-		default:
-		case 2: fs = 0.5; fs2 = 0.5; fs3 = 0.5; break;
-		case 3: fs = 1; fs2 = 0.35; fs3 = 0.35; break;
-		case 4: fs = 0.75; fs2 = 0.25; fs3 = 0.5; break;
-	}
-	
-	if(mySize_x > mySize_y)
-	{
-		size1 = mySize_x;
-		size2 = mySize_y;
-		e1 = eX;
-		e2 = eY;
+		// Quadratic arrangement
+		slot_size = eX * mySize_x * 0.5 + eY * mySize_y * 0.5;
+		KH_SLOTS[0] = pos;
+		KH_SLOTS[1] = pos + eX * slot_size_x;
+		KH_SLOTS[2] = pos + eY * slot_size_y;
+		KH_SLOTS[3] = pos + eX * slot_size_x + eY * slot_size_y;
 	}
 	else
 	{
-		size1 = mySize_y;
-		size2 = mySize_x;
-		e1 = eY;
-		e2 = eX;
-	}
-	
-	switch(myteam)
-	{
-		default:
-		case NUM_TEAM_1:
+		if(mySize_x > mySize_y)
 		{
-			redkey_pos = pos;
-			bluekey_pos = pos + eX * fs2 * size1;
-			yellowkey_pos = pos - eX * fs2 * size1;
-			pinkkey_pos = pos + eX * fs3 * size1;
-			break;
+			// Horizontal arrangement
+			slot_size = eX * mySize_x / all_keys + eY * mySize_y;
+			for(i = 0; i < all_keys; ++i)
+				KH_SLOTS[i] = pos + eX * slot_size_x * i;
 		}
-		case NUM_TEAM_2:
+		else
 		{
-			redkey_pos = pos + eX * fs2 * size1;
-			bluekey_pos = pos;
-			yellowkey_pos = pos - eX * fs2 * size1;
-			pinkkey_pos = pos + eX * fs3 * size1;
-			break;
-		}
-		case NUM_TEAM_3:
-		{
-			redkey_pos = pos + eX * fs3 * size1;
-			bluekey_pos = pos - eX * fs2 * size1;
-			yellowkey_pos = pos;
-			pinkkey_pos = pos + eX * fs2 * size1;
-			break;
-		}
-		case NUM_TEAM_4:
-		{
-			redkey_pos = pos - eX * fs2 * size1;
-			bluekey_pos = pos + eX * fs3 * size1;
-			yellowkey_pos = pos + eX * fs2 * size1;
-			pinkkey_pos = pos;
-			break;
+			// Vertical arrangement
+			slot_size = eX * mySize_x + eY * mySize_y / all_keys;
+			for(i = 0; i < all_keys; ++i)
+				KH_SLOTS[i] = pos + eY * slot_size_y * i;
 		}
 	}
-	key_size = e1 * fs * size1 + e2 * size2;
 
-	f = bound(0, redkey_statuschange_elapsedtime*2, 1);
-	if(red_icon_prevstatus && f < 1)
-		drawpic_aspect_skin_expanding(redkey_pos + '0 0.3 0' * key_size_y, red_icon_prevstatus, key_size, '1 1 1', panel_fg_alpha * red_alpha_prevstatus, DRAWFLAG_NORMAL, f);
-	if(red_icon)
-		drawpic_aspect_skin(redkey_pos + '0 0.3 0' * key_size_y, red_icon, key_size, '1 1 1', panel_fg_alpha * red_alpha * f, DRAWFLAG_NORMAL);
-		
-	string carrier_icon = string_null;
-	switch(getstati(STAT_KH_REDKEY_TEAM))
-	{
-		case 1: carrier_icon = "kh_red_arrow"; break;
-		case 2: carrier_icon = "kh_blue_arrow"; break;
-		case 3: carrier_icon = "kh_yellow_arrow"; break;
-		case 4: carrier_icon = "kh_pink_arrow"; break;
-	}
-	if(carrier_icon)
-		drawpic_aspect_skin(redkey_pos, carrier_icon, ('1 0 0' * key_size_x) + ('0 0.3 0' * key_size_y) + ('0 0 1' * key_size_z), '1 1 1', panel_fg_alpha, DRAWFLAG_NORMAL);
+	// Make icons blink in case of RUN HERE
 
-	f = bound(0, bluekey_statuschange_elapsedtime*2, 1);
-	if(blue_icon_prevstatus && f < 1)
-		drawpic_aspect_skin_expanding(bluekey_pos + '0 0.3 0' * key_size_y, blue_icon_prevstatus, key_size, '1 1 1', panel_fg_alpha * blue_alpha_prevstatus, DRAWFLAG_NORMAL, f);
-	if(blue_icon)
-		drawpic_aspect_skin(bluekey_pos + '0 0.3 0' * key_size_y, blue_icon, key_size, '1 1 1', panel_fg_alpha * blue_alpha * f, DRAWFLAG_NORMAL);
-		
-	carrier_icon = string_null;
-	switch(getstati(STAT_KH_BLUEKEY_TEAM))
-	{
-		case 1: carrier_icon = "kh_red_arrow"; break;
-		case 2: carrier_icon = "kh_blue_arrow"; break;
-		case 3: carrier_icon = "kh_yellow_arrow"; break;
-		case 4: carrier_icon = "kh_pink_arrow"; break;
-	}
-	if(carrier_icon)
-		drawpic_aspect_skin(bluekey_pos, carrier_icon, ('1 0 0' * key_size_x) + ('0 0.3 0' * key_size_y) + ('0 0 1' * key_size_z), '1 1 1', panel_fg_alpha, DRAWFLAG_NORMAL);
-		
-	f = bound(0, yellowkey_statuschange_elapsedtime*2, 1);
-	if(yellow_icon_prevstatus && f < 1)
-		drawpic_aspect_skin_expanding(yellowkey_pos + '0 0.3 0' * key_size_y, yellow_icon_prevstatus, key_size, '1 1 1', panel_fg_alpha * yellow_alpha_prevstatus, DRAWFLAG_NORMAL, f);
-	if(yellow_icon)
-		drawpic_aspect_skin(yellowkey_pos + '0 0.3 0' * key_size_y, yellow_icon, key_size, '1 1 1', panel_fg_alpha * yellow_alpha * f, DRAWFLAG_NORMAL);
-		
-	carrier_icon = string_null;
-	switch(getstati(STAT_KH_YELLOWKEY_TEAM))
-	{
-		case 1: carrier_icon = "kh_red_arrow"; break;
-		case 2: carrier_icon = "kh_blue_arrow"; break;
-		case 3: carrier_icon = "kh_yellow_arrow"; break;
-		case 4: carrier_icon = "kh_pink_arrow"; break;
-	}
-	if(carrier_icon)
-		drawpic_aspect_skin(yellowkey_pos, carrier_icon, ('1 0 0' * key_size_x) + ('0 0.3 0' * key_size_y) + ('0 0 1' * key_size_z), '1 1 1', panel_fg_alpha, DRAWFLAG_NORMAL);
-		
-	f = bound(0, pinkkey_statuschange_elapsedtime*2, 1);
-	if(pink_icon_prevstatus && f < 1)
-		drawpic_aspect_skin_expanding(pinkkey_pos + '0 0.3 0' * key_size_y, pink_icon_prevstatus, key_size, '1 1 1', panel_fg_alpha * pink_alpha_prevstatus, DRAWFLAG_NORMAL, f);
-	if(pink_icon)
-		drawpic_aspect_skin(pinkkey_pos + '0 0.3 0' * key_size_y, pink_icon, key_size, '1 1 1', panel_fg_alpha * pink_alpha * f, DRAWFLAG_NORMAL);
-		
-	carrier_icon = string_null;
-	switch(getstati(STAT_KH_PINKKEY_TEAM))
-	{
-		case 1: carrier_icon = "kh_red_arrow"; break;
-		case 2: carrier_icon = "kh_blue_arrow"; break;
-		case 3: carrier_icon = "kh_yellow_arrow"; break;
-		case 4: carrier_icon = "kh_pink_arrow"; break;
-	}
-	if(carrier_icon)
-		drawpic_aspect_skin(pinkkey_pos, carrier_icon, ('1 0 0' * key_size_x) + ('0 0.3 0' * key_size_y) + ('0 0 1' * key_size_z), '1 1 1', panel_fg_alpha, DRAWFLAG_NORMAL);
+	float blink = 0.6 + sin(2*M_PI*time) / 2.5; // Oscillate between 0.2 and 1
+	float alpha;
+	alpha = 1;
+
+	if(carrying_keys)
+		switch(myteam)
+		{
+			case NUM_TEAM_1: if(team1_keys == all_keys) alpha = blink; break;
+			case NUM_TEAM_2: if(team2_keys == all_keys) alpha = blink; break;
+			case NUM_TEAM_3: if(team3_keys == all_keys) alpha = blink; break;
+			case NUM_TEAM_4: if(team4_keys == all_keys) alpha = blink; break;
+		}
+
+	// Draw icons
+
+	i = 0;
+
+	while(team1_keys--)
+		if(myteam == NUM_TEAM_1 && carrying_keys)
+		{
+			drawpic_aspect_skin(KH_SLOTS[i++], "kh_red_carrying", slot_size, '1 1 1', alpha, DRAWFLAG_NORMAL);
+			--carrying_keys;
+		}
+		else
+			drawpic_aspect_skin(KH_SLOTS[i++], "kh_red_taken", slot_size, '1 1 1', alpha, DRAWFLAG_NORMAL);
+
+	while(team2_keys--)
+		if(myteam == NUM_TEAM_2 && carrying_keys)
+		{
+			drawpic_aspect_skin(KH_SLOTS[i++], "kh_blue_carrying", slot_size, '1 1 1', alpha, DRAWFLAG_NORMAL);
+			--carrying_keys;
+		}
+		else
+			drawpic_aspect_skin(KH_SLOTS[i++], "kh_blue_taken", slot_size, '1 1 1', alpha, DRAWFLAG_NORMAL);
+
+	while(team3_keys--)
+		if(myteam == NUM_TEAM_3 && carrying_keys)
+		{
+			drawpic_aspect_skin(KH_SLOTS[i++], "kh_yellow_carrying", slot_size, '1 1 1', alpha, DRAWFLAG_NORMAL);
+			--carrying_keys;
+		}
+		else
+			drawpic_aspect_skin(KH_SLOTS[i++], "kh_yellow_taken", slot_size, '1 1 1', alpha, DRAWFLAG_NORMAL);
+
+	while(team4_keys--)
+		if(myteam == NUM_TEAM_4 && carrying_keys)
+		{
+			drawpic_aspect_skin(KH_SLOTS[i++], "kh_pink_carrying", slot_size, '1 1 1', alpha, DRAWFLAG_NORMAL);
+			--carrying_keys;
+		}
+		else
+			drawpic_aspect_skin(KH_SLOTS[i++], "kh_pink_taken", slot_size, '1 1 1', alpha, DRAWFLAG_NORMAL);
+
+	while(dropped_keys--)
+		drawpic_aspect_skin(KH_SLOTS[i++], "kh_dropped", slot_size, '1 1 1', alpha, DRAWFLAG_NORMAL);
 }
 
 // Keepaway HUD mod icon
@@ -5585,7 +5414,7 @@ void HUD_QuickMenu_Mouse()
 		}
 	}
 
-	const vector cursorsize = '32 32 0';
+	vector cursorsize = '32 32 0';
 	drawpic(mousepos, strcat("gfx/menu/", autocvar_menu_skin, "/cursor.tga"), cursorsize, '1 1 1', 0.8, DRAWFLAG_NORMAL);
 
 	prevMouseClicked = mouseClicked;
@@ -5857,7 +5686,6 @@ void HUD_Reset (void)
 	// reset gametype specific icons
 	switch(gametype)
 	{
-		case MAPINFO_TYPE_KEYHUNT: HUD_Mod_KH_Reset(); break;
 		case MAPINFO_TYPE_CTF: HUD_Mod_CTF_Reset(); break;
 		case MAPINFO_TYPE_VIP: HUD_Mod_VIP_Reset(); break;
 	}

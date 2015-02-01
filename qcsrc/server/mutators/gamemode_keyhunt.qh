@@ -115,6 +115,10 @@ float kh_siren_time;
 
 
 // networked key statuses
+//     bits  0- 4: team of key 1, or 0 for no such key, or 30 for dropped, or 31 for self
+//     bits  5- 9: team of key 2, or 0 for no such key, or 30 for dropped, or 31 for self
+//     bits 10-14: team of key 3, or 0 for no such key, or 30 for dropped, or 31 for self
+//     bits 15-19: team of key 4, or 0 for no such key, or 30 for dropped, or 31 for self
 .float kh_keystatus;
 
 const float	KH_RED_KEY_TAKEN			= 1;

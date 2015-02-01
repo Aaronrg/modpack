@@ -123,7 +123,6 @@ float KH_CheckWinner()
 		round_handler_Init(5, autocvar_g_keyhunt_warmup, autocvar_g_keyhunt_round_timelimit);
 		FOR_EACH_CLIENT(e)
 		{
-			e.stat_kh_redkey_team = e.stat_kh_bluekey_team = e.stat_kh_yellowkey_team = e.stat_kh_pinkkey_team = 0;
 			e.kh_lastkiller = world;
 		}
 		nades_Clear(world, TRUE);
@@ -187,7 +186,6 @@ float KH_CheckWinner()
 
 	FOR_EACH_CLIENT(e)
 	{
-		e.stat_kh_redkey_team = e.stat_kh_bluekey_team = e.stat_kh_yellowkey_team = e.stat_kh_pinkkey_team = 0;
 		e.kh_lastkiller = world;
 	}
 	
@@ -1176,48 +1174,25 @@ void havocbot_role_kh_freelancer()
 MUTATOR_HOOKFUNCTION(kh_PlayerPreThink)
 {
 	entity key;
+	float s;
+	float f;
 
-	float t = 0, t2 = 0, t3 = 0;
-
-	// initially clear items so they can be set as necessary later.
-	self.kh_keystatus &= ~(KH_RED_KEY_CARRYING 		| KH_RED_KEY_TAKEN		| KH_RED_KEY_LOST 
-						 | KH_BLUE_KEY_CARRYING 	| KH_BLUE_KEY_TAKEN 	| KH_BLUE_KEY_LOST
-						 | KH_YELLOW_KEY_CARRYING	| KH_YELLOW_KEY_TAKEN 	| KH_YELLOW_KEY_LOST
-						 | KH_PINK_KEY_CARRYING 	| KH_PINK_KEY_TAKEN 	| KH_PINK_KEY_LOST);
-
-	// scan through all the keys and notify the client about them
+	s = 0;
 	KH_FOR_EACH_KEY(key)
 	{
-		if(key.team == NUM_TEAM_1) { t = KH_RED_KEY_CARRYING;		t2 = KH_RED_KEY_TAKEN;		t3 = KH_RED_KEY_LOST; }
-		if(key.team == NUM_TEAM_2) { t = KH_BLUE_KEY_CARRYING;		t2 = KH_BLUE_KEY_TAKEN;		t3 = KH_BLUE_KEY_LOST; }
-		if(key.team == NUM_TEAM_3) { t = KH_YELLOW_KEY_CARRYING; 	t2 = KH_YELLOW_KEY_TAKEN; 	t3 = KH_YELLOW_KEY_LOST; }
-		if(key.team == NUM_TEAM_4) { t = KH_PINK_KEY_CARRYING;		t2 = KH_PINK_KEY_TAKEN;		t3 = KH_PINK_KEY_LOST; }
+		if(key.owner)
+			f = key.team;
+		else
+			f = 30;
+		s |= pow(32, Team_TeamToNumber(key.team) - 1) * f;
+	}
 
-		switch(key.kh_status)
-		{
-			case KEY_PASSING:
-			case KEY_CARRY:
-			{
-				if((key.owner == self) || (key.pass_sender == self))
-					self.kh_keystatus |= t; // carrying: self is currently carrying the key
-				else 
-					self.kh_keystatus |= t2; // taken: someone else is carrying the key
-				break;
-			}
-			case KEY_DROPPED:
-			{
-				self.kh_keystatus |= t3; // lost: the key is dropped somewhere on the map
-				break;
-			}
-		}
-		
-		switch(key.team)
-		{
-			case NUM_TEAM_1: self.stat_kh_redkey_team = Team_TeamToNumber(key.owner.team); break;
-			case NUM_TEAM_2: self.stat_kh_bluekey_team = Team_TeamToNumber(key.owner.team); break;
-			case NUM_TEAM_3: self.stat_kh_yellowkey_team = Team_TeamToNumber(key.owner.team); break;
-			case NUM_TEAM_4: self.stat_kh_pinkkey_team = Team_TeamToNumber(key.owner.team); break;
-		}
+	self.kh_keystatus = s;
+
+	KH_FOR_EACH_KEY(key)
+	{
+		if(key.owner == self)
+			key.owner.kh_keystatus |= pow(32, Team_TeamToNumber(key.team) - 1) * 31;
 	}
 
 	// update the health of the key carrier waypointsprite
@@ -1426,7 +1401,6 @@ MUTATOR_HOOKFUNCTION(kh_ResetMapGlobal)
 	entity e, key;
 	FOR_EACH_CLIENT(e)
 	{
-		e.stat_kh_redkey_team = e.stat_kh_bluekey_team = e.stat_kh_yellowkey_team = e.stat_kh_pinkkey_team = 0;
 		e.kh_lastkiller = world;
 	}
 	KH_FOR_EACH_KEY(key) { if(!wasfreed(key)) kh_RemoveKey(key); }
@@ -1588,10 +1562,6 @@ void kh_Initialize()
 	precache_sound("ctf/pass.wav");
 
 	addstat(STAT_KH_KEYSTATUS, AS_INT, kh_keystatus);
-	addstat(STAT_KH_REDKEY_TEAM, AS_INT, stat_kh_redkey_team);
-	addstat(STAT_KH_BLUEKEY_TEAM, AS_INT, stat_kh_bluekey_team);
-	addstat(STAT_KH_YELLOWKEY_TEAM, AS_INT, stat_kh_yellowkey_team);
-	addstat(STAT_KH_PINKKEY_TEAM, AS_INT, stat_kh_pinkkey_team);
 
 	InitializeEntity(world, kh_DelayedInit, INITPRIO_GAMETYPE);
 }

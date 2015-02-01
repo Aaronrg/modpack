@@ -27,6 +27,7 @@ void register_monster(float id, float(float) func, float(float) attackfunc, floa
 	e.maxs = max_s;
 	e.model = strzone(strcat("models/monsters/", e.mdl));
 
+#ifndef MENUQC
 	precache_model(e.model);
 	func(MR_PRECACHE); // it had to be done eventually
 
@@ -41,6 +42,7 @@ void register_monster(float id, float(float) func, float(float) attackfunc, floa
 	if(fexists(trymodel)) { precache_model(trymodel); }
 	trymodel = sprintf("models/monsters/%s_%d%s", noext, 5, ext);
 	if(fexists(trymodel)) { precache_model(trymodel); }
+#endif
 }
 float m_null(float dummy) { return 0; }
 void register_monsters_done()

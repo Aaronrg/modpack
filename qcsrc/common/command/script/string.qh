@@ -99,13 +99,13 @@ entity string_to_entity(string s)
 {
 	return float_to_entity(stof(s));
 }
-string entity_get(entity e, string field)
+string entity_get(entity e, string newfield)
 {
 	float n = numentityfields();
 	float i;
 	for ( i = 0; i < n; i++ )
 	{
-		if ( entityfieldname(i) == field )
+		if ( entityfieldname(i) == newfield )
 		{
 			return getentityfieldstring(i,e);
 		}
@@ -113,7 +113,7 @@ string entity_get(entity e, string field)
 	return "";
 }
 
-float entity_set(entity e, string field, string value)
+float entity_set(entity e, string newfield, string newvalue)
 {
 	if ( !e )
 		return 0;
@@ -121,9 +121,9 @@ float entity_set(entity e, string field, string value)
 	float i;
 	for ( i = 0; i < n; i++ )
 	{
-		if ( entityfieldname(i) == field )
+		if ( entityfieldname(i) == newfield )
 		{
-			return putentityfieldstring(i,e,value);
+			return putentityfieldstring(i,e,newvalue);
 		}
 	}
 	return 0;

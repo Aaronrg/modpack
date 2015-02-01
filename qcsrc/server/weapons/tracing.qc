@@ -320,7 +320,7 @@ void FireRailgunBullet (vector start, vector end, float bdamage, float bforce, f
 		else
 			jeff_Announcer_FireBullet(ent, self, hitloc, start, end);
 
-		if(accuracy_isgooddamage(self.realowner, ent))
+		if(accuracy_isgooddamage(self, ent))
 			totaldmg += bdamage * f;
 
 		// apply the damage

@@ -14,6 +14,10 @@ entity current_context;
 .entity context_variables;
 .entity context_functions;
 
+#ifdef MENUQC
+.entity owner;
+#endif
+
 const float AST_TYPE_VALUE    = 0x00;
 const float AST_TYPE_BREAK    = 0x01;
 const float AST_TYPE_RETURN   = 0x02;
@@ -130,14 +134,18 @@ string context_get_variable(entity context,string varname)
 		return context_get_variable(context.owner,varname);
 	return "";
 }
-float context_set_variable(entity context,string varname, string value)
+float context_set_variable(entity context,string varname, string newvalue)
 {
 	if ( strlen(varname) > 5 )
 	if ( substring(varname,0,5) == "cvar_" )
 	{
 		varname = substring(varname,5,strlen(varname)-5);
+#ifdef MENUQC
+		registercvar(varname, "", 0);
+#else
 		registercvar(varname, "");
-		cvar_set(varname,value);
+#endif
+		cvar_set(varname,newvalue);
 		return 1;
 	}
 	entity currentvar = context.context_variables;
@@ -145,20 +153,20 @@ float context_set_variable(entity context,string varname, string value)
 	{
 		if ( currentvar.netname == varname )
 		{
-			currentvar.script_value = value;
+			currentvar.script_value = newvalue;
 			return 1;
 		}
 		currentvar = currentvar.script_next;
 	}
 	if ( context.owner )
-	if ( context_set_variable(context.owner,varname,value) )
+	if ( context_set_variable(context.owner,varname,newvalue) )
 		return 1;
 	return 0;
 }
-void context_define_variable(entity context,string varname, string value)
+void context_define_variable(entity context,string varname, string newvalue)
 {
 	entity newvar = spawn();
-	newvar.script_value = value;
+	newvar.script_value = newvalue;
 	newvar.netname = varname;
 	newvar.classname = "script_variable";
 	newvar.script_next = context.context_variables;
@@ -315,10 +323,10 @@ entity ast_tempvalue_evaluate()
 {
 	return self;
 }
-entity ast_tempvalue(string value)
+entity ast_tempvalue(string newvalue)
 {
 	entity ast_temp = spawn();
-	ast_temp.script_value = value;
+	ast_temp.script_value = newvalue;
 	ast_temp.ast_evaluate = ast_tempvalue_evaluate;
 	ast_temp.classname="ast_tempvalue";
 	return ast_temp;
@@ -332,10 +340,10 @@ entity ast_simplevalue_evaluate()
 {
 	return ast_tempvalue(self.script_value);
 }
-entity ast_simplevalue(string value)
+entity ast_simplevalue(string newvalue)
 {
 	entity ast_temp = spawn();
-	ast_temp.script_value = value;
+	ast_temp.script_value = newvalue;
 	ast_temp.ast_evaluate = ast_simplevalue_evaluate;
 	ast_temp.classname="ast_simplevalue";
 	return ast_temp;
@@ -468,17 +476,17 @@ entity ast_function_evaluate()
 				script_evaluate(next_param.ast_operand1) );
 			next_param = next_param.script_next;
 		}
-		entity value = script_evaluate_entity(function.ast_operand2);
+		entity newvalue = script_evaluate_entity(function.ast_operand2);
 		context_pop();
-		value.script_type &= ~AST_TYPE_RETURN;
-		return value;
+		newvalue.script_type &= ~AST_TYPE_RETURN;
+		return newvalue;
 	}
 	return ast_tempnull();
 }
-entity ast_function(string name)
+entity ast_function(string newname)
 {
 	entity ast_temp = spawn();
-	ast_temp.script_value = name;
+	ast_temp.script_value = newname;
 	ast_temp.ast_evaluate = ast_function_evaluate;
 	ast_temp.classname="ast_function";
 	return ast_temp;
@@ -489,10 +497,10 @@ entity ast_function_declaration_evaluate()
 	context_define_function(current_context,self.script_value,self.ast_operand2,self.ast_operand1);
 	return ast_tempnull();
 }
-entity ast_function_declaration(string name)
+entity ast_function_declaration(string newname)
 {
 	entity ast_temp = spawn();
-	ast_temp.script_value = name;
+	ast_temp.script_value = newname;
 	ast_temp.ast_evaluate = ast_function_declaration_evaluate;
 	ast_temp.classname="ast_function_declaration";
 	return ast_temp;
@@ -603,13 +611,13 @@ entity ast_return_evaluate()
 	val.script_type = self.script_type;
 	return val;
 }
-entity ast_return(entity value)
+entity ast_return(entity newvalue)
 {
 	entity ast_temp = spawn();
 	ast_temp.script_type = AST_TYPE_RETURN;
 	ast_temp.classname="ast_return";
 	ast_temp.ast_evaluate = ast_return_evaluate;
-	ast_temp.ast_operand1 = value;
+	ast_temp.ast_operand1 = newvalue;
 	return ast_temp;
 }
 

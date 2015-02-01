@@ -1273,6 +1273,7 @@ void spawnfunc_target_items (void)
 {
 	float n, i, j;
 	entity e;
+	string s;
 
 	self.use = target_items_use;
 	if(!self.superweapons_finished)
@@ -1305,7 +1306,8 @@ void spawnfunc_target_items (void)
 				for(j = WEP_FIRST; j <= WEP_LAST; ++j)
 				{
 					e = get_weaponinfo(j);
-					if(argv(i) == e.netname)
+					s = W_UndeprecateName(argv(i));
+					if(s == e.netname)
 					{
 						self.weapons |= WepSet_FromWeapon(j);
 						if(self.spawnflags == 0 || self.spawnflags == 2)
@@ -1409,8 +1411,6 @@ void spawnfunc_item_fuel_regen(void)
 
 void spawnfunc_item_jetpack(void)
 {
-	if(g_grappling_hook)
-		return; // sorry, but these two can't coexist (same button); spawn fuel instead
 	if(!self.ammo_fuel)
 		self.ammo_fuel = g_pickup_fuel_jetpack;
 	if(start_items & IT_JETPACK)
