@@ -51,6 +51,14 @@ void tdm_DelayedInit()
 MUTATOR_HOOKFUNCTION(tdm_GetTeamCount)
 {
 	ret_string = "tdm_team";
+	if(find(world, classname, "tdm_team") == world)
+	{
+		// make it at least half accurate
+		ret_float = bound(2, ((autocvar_g_tdm_teams_override < 2) ? autocvar_g_tdm_teams : autocvar_g_tdm_teams_override), 4);
+		ret_string = string_null;
+		return FALSE;
+	}
+
 	return TRUE;
 }
 
