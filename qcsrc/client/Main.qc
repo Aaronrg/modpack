@@ -1,3 +1,31 @@
+#include "announcer.qh"
+#include "conquest.qh"
+#include "controlpoint.qh"
+#include "generator.qh"
+#include "mapvoting.qh"
+#include "modeleffects.qh"
+#include "particles.qh"
+#include "scoreboard.qh"
+#include "shownames.qh"
+#include "target_music.qh"
+#include "../common/turrets/cl_turrets.qh"
+#include "tuba.qh"
+#include "wall.qh"
+#include "waypointsprites.qh"
+
+#include "../common/effects.qh"
+
+#include "../common/vehicles/unit/bumblebee.qh"
+#include "../common/vehicles/cl_vehicles.qh"
+
+#include "../common/net_notice.qh"
+
+#include "../common/monsters/monsters.qh"
+#include "../common/turrets/turrets.qh"
+#include "../common/vehicles/vehicles.qh"
+
+#include "../warpzonelib/client.qh"
+
 // --------------------------------------------------------------------------
 // BEGIN REQUIRED CSQC FUNCTIONS
 //include "main.qh"
@@ -10,7 +38,7 @@ void clearentity(entity e)
 		clearentity_ent = spawn();
 		clearentity_ent.classname = "clearentity";
 	}
-	float n = e.entnum;
+	int n = e.entnum;
 	copyentity(clearentity_ent, e);
 	e.entnum = n;
 }
@@ -39,7 +67,7 @@ void CSQC_Init(void)
 	dprintf("^4CSQC Build information: ^1%s\n", WATERMARK);
 #endif
 
-	float i;
+	int i;
 
 	binddb = db_create();
 	tempdb = db_create();
@@ -47,7 +75,7 @@ void CSQC_Init(void)
 	compressShortVector_init();
 
 	draw_endBoldFont();
-	menu_visible = FALSE;
+	menu_visible = false;
 	menu_show = menu_show_error;
 	menu_action = func_null;
 
@@ -275,7 +303,7 @@ void Shutdown(void)
 }
 
 .float has_team;
-float SetTeam(entity o, float Team)
+float SetTeam(entity o, int Team)
 {
 	entity tm;
 	if(teamplay)
@@ -320,7 +348,7 @@ float SetTeam(entity o, float Team)
 			tm = GetTeam(o.team, false);
 			tm.team_size -= 1;
 			o.has_team = 0;
-			return TRUE;
+			return true;
 		}
 	}
 	else
@@ -331,7 +359,7 @@ float SetTeam(entity o, float Team)
 			tm = GetTeam(Team, true);
 			tm.team_size += 1;
 			o.has_team = 1;
-			return TRUE;
+			return true;
 		}
 		else if(Team != o.team)
 		{
@@ -340,15 +368,15 @@ float SetTeam(entity o, float Team)
 			o.team = Team;
 			tm = GetTeam(Team, true);
 			tm.team_size += 1;
-			return TRUE;
+			return true;
 		}
 	}
-	return FALSE;
+	return false;
 }
 
 void Playerchecker_Think()
 {
-	float i;
+    int i;
 	entity e;
 	for(i = 0; i < maxclients; ++i)
 	{
@@ -419,8 +447,6 @@ void PostInit(void)
 	postinit = true;
 }
 
-float button_zoom;
-
 // CSQC_InputEvent : Used to perform actions based on any key pressed, key released and mouse on the client.
 // Return value should be 1 if CSQC handled the input, otherwise return 0 to have the input passed to the engine.
 // All keys are in ascii.
@@ -450,7 +476,7 @@ float CSQC_InputEvent(float bInputType, float nPrimary, float nSecondary)
 
 	if(menu_visible && menu_action)
 		if(menu_action(bInputType, nPrimary, nSecondary))
-			return TRUE;
+			return true;
 
 	return bSkipKey;
 }
@@ -466,7 +492,7 @@ void Ent_RemoveEntCS()
 }
 void Ent_ReadEntCS()
 {
-	float sf;
+    int sf;
 	InterpolateOrigin_Undo();
 
 	self.classname = "entcs_receiver";
@@ -502,21 +528,19 @@ void Ent_Remove();
 
 void Ent_RemovePlayerScore()
 {
-	float i;
-
-	if(self.owner)
-	{
+	if(self.owner) {
 		SetTeam(self.owner, -1);
 		self.owner.gotscores = 0;
-		for(i = 0; i < MAX_SCORE; ++i)
+		for(int i = 0; i < MAX_SCORE; ++i) {
 			self.owner.(scores[i]) = 0; // clear all scores
+		}
 	}
 }
 
 void Ent_ReadPlayerScore()
 {
-	float i, n;
-	float isNew;
+	int i, n;
+	bool isNew;
 	entity o;
 
 	// damnit -.- don't want to go change every single .sv_entnum in hud.qc AGAIN
@@ -547,7 +571,7 @@ void Ent_ReadPlayerScore()
 	//	RegisterPlayer(o);
 	//playerchecker will do this for us later, if it has not already done so
 
-	float sf, lf;
+    int sf, lf;
 #if MAX_SCORE <= 8
 	sf = ReadByte();
 	lf = ReadByte();
@@ -555,7 +579,7 @@ void Ent_ReadPlayerScore()
 	sf = ReadShort();
 	lf = ReadShort();
 #endif
-	float p;
+    int p;
 	for(i = 0, p = 1; i < MAX_SCORE; ++i, p *= 2)
 		if(sf & p)
 		{
@@ -573,13 +597,13 @@ void Ent_ReadPlayerScore()
 
 void Ent_ReadTeamScore()
 {
-	float i;
+	int i;
 	entity o;
 
 	self.team = ReadByte();
 	o = self.owner = GetTeam(self.team, true); // these team numbers can always be trusted
 
-	float sf, lf;
+    int sf, lf;
 #if MAX_TEAMSCORE <= 8
 	sf = ReadByte();
 	lf = ReadByte();
@@ -587,7 +611,7 @@ void Ent_ReadTeamScore()
 	sf = ReadShort();
 	lf = ReadShort();
 #endif
-	float p;
+	int p;
 	for(i = 0, p = 1; i < MAX_TEAMSCORE; ++i, p *= 2)
 		if(sf & p)
 		{
@@ -602,10 +626,9 @@ void Ent_ReadTeamScore()
 
 void Ent_ClientData()
 {
-	float f;
 	float newspectatee_status;
 
-	f = ReadByte();
+    int f = ReadByte();
 
 	scoreboard_showscores_force = (f & 1);
 
@@ -623,9 +646,9 @@ void Ent_ClientData()
 	if(f & 8)
 	{
 		angles_held_status = 1;
-		angles_held_x = ReadAngle();
-		angles_held_y = ReadAngle();
-		angles_held_z = 0;
+		angles_held.x = ReadAngle();
+		angles_held.y = ReadAngle();
+		angles_held.z = 0;
 	}
 	else
 		angles_held_status = 0;
@@ -672,9 +695,9 @@ void Ent_ClientData()
 
 void Ent_Nagger()
 {
-	float nags, i, j, b, f;
+    int i, j, b, f;
 
-	nags = ReadByte(); // NAGS NAGS NAGS NAGS NAGS NAGS NADZ NAGS NAGS NAGS
+    int nags = ReadByte(); // NAGS NAGS NAGS NAGS NAGS NAGS NADZ NAGS NAGS NAGS
 
 	if(!(nags & 4))
 	{
@@ -727,9 +750,9 @@ void Ent_Nagger()
 
 void Ent_EliminatedPlayers()
 {
-	float sf, i, j, b, f;
+    int i, j, b, f;
 
-	sf = ReadByte();
+    int sf = ReadByte();
 	if(sf & 1)
 	{
 		for(j = 0; j < maxclients; ++j)
@@ -756,8 +779,8 @@ void Ent_RandomSeed()
 
 void Ent_ReadAccuracy(void)
 {
-	float sf, f, w, b;
-	sf = ReadInt24_t();
+    int f, w;
+    int sf = ReadInt24_t();
 	if(sf == 0)
 	{
 		for(w = 0; w <= WEP_LAST - WEP_FIRST; ++w)
@@ -769,7 +792,7 @@ void Ent_ReadAccuracy(void)
 	{
 		if(sf & f)
 		{
-			b = ReadByte();
+            int b = ReadByte();
 			if(b == 0)
 				weapon_accuracy[w] = -1;
 			else if(b == 255)
@@ -801,7 +824,7 @@ void ent_jailcamera()
 		self.angles_z = 0;
 
 		self.classname = "jailcamera";
-		self.jb_camera_active = FALSE;
+		self.jb_camera_active = false;
 	}
 	
 	if(sf & 2)
@@ -819,9 +842,9 @@ void Ent_ReadSpawnPoint(float is_new) // entity for spawnpoint
 {
 	float teamnum = (ReadByte() - 1);
 	vector spn_origin;
-	spn_origin_x = ReadShort();
-	spn_origin_y = ReadShort();
-	spn_origin_z = ReadShort();
+	spn_origin.x = ReadShort();
+	spn_origin.y = ReadShort();
+	spn_origin.z = ReadShort();
 
 	if(is_new)
 	{
@@ -905,7 +928,7 @@ void Ent_ReadSpawnEvent(float is_new)
 		if(autocvar_cl_unpress_zoom_on_spawn)
 		{
 			localcmd("-zoom\n");
-			button_zoom = FALSE;
+			button_zoom = false;
 		}
 	}
 	HUD_Radar_Hide_Maximized();
@@ -1108,7 +1131,7 @@ void Fog_Force()
 void Gamemode_Init();
 void Ent_ScoresInfo()
 {
-	float i;
+    int i;
 	self.classname = "ent_client_scores_info";
 	gametype = ReadInt24_t();
 	HUD_ModIcons_SetFunc();
@@ -1282,13 +1305,13 @@ void Net_ReadRace()
 			race_speedaward_alltimebest_holder = strzone(ReadString());
 			break;
 		case RACE_NET_SERVER_RANKINGS:
-			float pos, prevpos, del;
-			pos = ReadShort();
+			float prevpos, del;
+            int pos = ReadShort();
 			prevpos = ReadShort();
 			del = ReadShort();
 
 			// move other rankings out of the way
-			float i;
+            int i;
 			if (prevpos) {
 				for (i=prevpos-1;i>pos-1;--i) {
 					grecordtime[i] = grecordtime[i-1];
@@ -1343,7 +1366,7 @@ void Net_TeamNagger()
 
 void Net_ReadPingPLReport()
 {
-	float e, pi, pl, ml;
+	int e, pi, pl, ml;
 	e = ReadByte();
 	pi = ReadShort();
 	pl = ReadByte();
