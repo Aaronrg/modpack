@@ -552,12 +552,12 @@ void nade_boom()
 
 void nade_touch()
 {
-	float is_weapclip = 0;
+	/*float is_weapclip = 0;
 	if(trace_dphitq3surfaceflags & Q3SURFACEFLAG_NODRAW)
 	if (!(trace_dphitq3surfaceflags & Q3SURFACEFLAG_NONSOLID))
 	if (!(trace_dphitcontents & DPCONTENTS_OPAQUE))
-		is_weapclip = 1;
-	if(ITEM_TOUCH_NEEDKILL() || is_weapclip)
+		is_weapclip = 1;*/
+	if(ITEM_TOUCH_NEEDKILL()) // || is_weapclip)
 	{
 		remove(self);
 		return;
@@ -704,7 +704,7 @@ void toss_nade(entity e, vector _velocity, float _time)
 	_nade.flags = FL_PROJECTILE;
 	_nade.projectiledeathtype = DEATH_NADE;
 	_nade.toss_time = time;
-	_nade.solid = SOLID_CORPSE; //((_nade.nade_type == NADE_TYPE_TRANSLOCATE) ? SOLID_CORPSE : SOLID_BBOX);
+	//_nade.solid = SOLID_TRIGGER; //((_nade.nade_type == NADE_TYPE_TRANSLOCATE) ? SOLID_CORPSE : SOLID_BBOX);
 
 	if(_nade.nade_type == NADE_TYPE_TRANSLOCATE || _nade.nade_type == NADE_TYPE_SPAWN)
 		_nade.dphitcontentsmask = DPCONTENTS_SOLID | DPCONTENTS_PLAYERCLIP | DPCONTENTS_BOTCLIP;
