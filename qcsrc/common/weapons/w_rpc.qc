@@ -93,7 +93,7 @@ void W_RocketPropelledChainsaw_Think()
 	self.wait = self.cnt * sys_frametime;
 	self.pos1 = normalize(self.velocity);
 
-	//tracebox(self.origin, self.mins, self.maxs, self.origin + self.pos1 * (2 * self.wait), MOVE_NORMAL, self);
+	tracebox(self.origin, self.mins, self.maxs, self.origin + self.pos1 * (2 * self.wait), MOVE_NORMAL, self);
 	if(IS_PLAYER(trace_ent))
 		Damage (trace_ent, self, self.realowner, WEP_CVAR(rpc, damage2), self.projectiledeathtype, self.origin, normalize(self.origin - other.origin) * WEP_CVAR(rpc, force));
 
