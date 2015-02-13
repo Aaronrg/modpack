@@ -12,7 +12,7 @@ Requirements
 
 GMQCC - git://git.xonotic.org/xonotic/gmqcc.git  
 Xonotic - http://xonotic.org/download or git://git.xonotic.org/xonotic/xonotic.git  
-Required content packs - http://smb.djstrikes3.com/zzz-misc-v006-25-g19c24ed.pk3 http://smb.djstrikes3.com/zzz-quickmenu_010.pk3 http://smb.djstrikes3.com/zzz-minigames-v006-25-g19c24ed.pk3  
+Required content packs - http://smb.djstrikes3.com/zzz-misc-v006-31-gae6734d.pk3 http://smb.djstrikes3.com/zzz-quickmenu_010.pk3 http://smb.djstrikes3.com/zzz-minigames-v006-25-g19c24ed.pk3  
 Optional content packs - http://smb.djstrikes3.com/zzz-monsters-v006-25-g19c24ed.pk3 http://smb.djstrikes3.com/zzz-vehicles_001.pk3
 
 
